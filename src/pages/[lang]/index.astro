@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import ReportCard from '../../components/ReportCard.astro';
+import SubscribeButton from '../../components/SubscribeButton.tsx';
+import { listReports, fetchReport, type Lang } from '../../lib/github';
+
+const vapidKey = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY ?? '';
+
+export async function getStaticPaths() {
+  return [{ params: { lang: 'en' } }, { params: { lang: 'zh' } }];
+}
+
+const { lang } = Astro.params as { lang: Lang };
+
+const metas = await listReports(lang);
+const latest = metas[0];
+const rest = metas.slice(1, 20);
+
+// Fetch summaries for the top cards so previews render at build time.
+const withSummariesPromises = [latest, ...rest.slice(0, 4)]
+  .filter(Boolean)
+  .map(async (m) => {
+    try {
+      const r = await fetchReport(m!);
+      return { meta: m!, summary: r.summary };
+    } catch {
+      return { meta: m!, summary: '' };
+    }
+  });
+const withSummaries = await Promise.all(withSummariesPromises);
+const summaryMap = new Map(withSummaries.map((x) => [x.meta.slug, x.summary]));
+
+const title =
+  lang === 'zh' ? 'BuilderPulse 每日 · 阅读器' : 'BuilderPulse Daily · Reader';
+---
+
+<BaseLayout title={title} lang={lang}>
+  <Header lang={lang} currentPath={Astro.url.pathname} />
+
+  <main class="mx-auto max-w-2xl px-4 py-6 pb-24">
+    <section class="mb-8">
+      <h1 class="text-2xl font-bold tracking-tight mb-1">
+        {lang === 'zh' ? '今日 BuilderPulse' : "Today's BuilderPulse"}
+      </h1>
+      <p class="text-sm" style="color: var(--color-muted);">
+        {
+          lang === 'zh'
+            ? '聚合 Hacker News · GitHub · Product Hunt · HuggingFace · Google Trends · Reddit 的每日趋势与 2 小时可动手构想。'
+            : 'Daily signals from Hacker News · GitHub · Product Hunt · HuggingFace · Google Trends · Reddit — with 2-hour build ideas.'
+        }
+      </p>
+    </section>
+
+    {
+      latest && (
+        <section class="mb-6">
+          <ReportCard meta={latest} summary={summaryMap.get(latest.slug)} featured />
+        </section>
+      )
+    }
+
+    {
+      vapidKey && (
+        <section class="mb-8">
+          <SubscribeButton client:idle lang={lang} vapidKey={vapidKey} />
+        </section>
+      )
+    }
+
+    {
+      rest.length > 0 && (
+        <section>
+          <h2
+            class="text-xs uppercase tracking-widest font-semibold mb-3"
+            style="color: var(--color-muted);"
+          >
+            {lang === 'zh' ? '近期报告' : 'Recent'}
+          </h2>
+          <div class="flex flex-col gap-3">
+            {rest.map((m) => (
+              <ReportCard meta={m} summary={summaryMap.get(m.slug)} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      metas.length === 0 && (
+        <p class="text-sm" style="color: var(--color-muted);">
+          {lang === 'zh' ? '暂无报告。' : 'No reports yet.'}
+        </p>
+      )
+    }
+
+  </main>
+
+  <script is:inline define:vars={{ lang }}>
+    try {
+      localStorage.setItem('bp-lang', lang);
+    } catch (_) {}
+  </script>
+</BaseLayout>

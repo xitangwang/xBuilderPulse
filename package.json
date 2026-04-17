@@ -1,0 +1,45 @@
+{
+  "name": "xbuilderpulse",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.2.1",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/vercel": "^8.0.4",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.0.0",
+    "@upstash/redis": "^1.37.0",
+    "astro": "^5.2.0",
+    "marked": "^15.0.6",
+    "marked-shiki": "^1.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "shiki": "^1.29.1",
+    "tailwindcss": "^4.0.0",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.8",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@types/web-push": "^3.6.4",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

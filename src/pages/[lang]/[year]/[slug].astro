@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/Header.astro';
+import {
+  listReports,
+  fetchReport,
+  type ReportMeta,
+} from '../../../lib/github';
+import { renderMarkdown } from '../../../lib/markdown';
+
+export async function getStaticPaths() {
+  const [en, zh] = await Promise.all([listReports('en'), listReports('zh')]);
+  const all = [...en, ...zh];
+
+  return all.map((meta) => {
+    const sameLang = all.filter((m) => m.lang === meta.lang);
+    const idx = sameLang.findIndex((m) => m.slug === meta.slug);
+    const newer = idx > 0 ? sameLang[idx - 1] : null;
+    const older = idx < sameLang.length - 1 ? sameLang[idx + 1] : null;
+    return {
+      params: { lang: meta.lang, year: meta.year, slug: meta.slug },
+      props: { meta, newer, older },
+    };
+  });
+}
+
+interface Props {
+  meta: ReportMeta;
+  newer: ReportMeta | null;
+  older: ReportMeta | null;
+}
+
+const { meta, newer, older } = Astro.props as Props;
+const { lang } = meta;
+
+const report = await fetchReport(meta);
+const html = await renderMarkdown(report.markdown);
+
+const d = new Date(meta.date + 'T00:00:00Z');
+const formatted =
+  lang === 'zh'
+    ? `${d.getUTCFullYear()} 年 ${d.getUTCMonth() + 1} 月 ${d.getUTCDate()} 日`
+    : d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC',
+      });
+
+const pageTitle = `${report.title} · BuilderPulse`;
+const labelPrev = lang === 'zh' ? '较新' : 'Newer';
+const labelNext = lang === 'zh' ? '较旧' : 'Older';
+const labelSource = lang === 'zh' ? '原文（GitHub）' : 'Source on GitHub';
+---
+
+<BaseLayout title={pageTitle} description={report.summary.slice(0, 160)} lang={lang}>
+  <Header lang={lang} currentPath={Astro.url.pathname} />
+
+  <main
+    id="report-main"
+    class="mx-auto max-w-2xl px-4 py-6 pb-28"
+    data-newer={newer
+      ? `/${newer.lang}/${newer.year}/${newer.slug}`
+      : ''}
+    data-older={older
+      ? `/${older.lang}/${older.year}/${older.slug}`
+      : ''}
+  >
+    <nav class="text-sm mb-4" style="color: var(--color-muted);">
+      <a href={`/${lang}`} class="underline underline-offset-2">
+        ← {lang === 'zh' ? '返回首页' : 'Back to index'}
+      </a>
+    </nav>
+
+    <header class="mb-6">
+      <p class="text-xs font-medium uppercase tracking-widest mb-2" style="color: var(--color-accent);">
+        {formatted}
+      </p>
+      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
+        {report.title}
+      </h1>
+    </header>
+
+    <article class="prose-report" set:html={html} />
+
+    <nav
+      class="mt-10 pt-6 border-t grid grid-cols-2 gap-3 text-sm"
+      style="border-color: var(--color-border);"
+    >
+      {newer ? (
+        <a
+          href={`/${newer.lang}/${newer.year}/${newer.slug}`}
+          class="rounded-lg border p-3 hover:bg-[color:var(--color-border)]"
+          style="border-color: var(--color-border);"
+        >
+          <div class="text-xs" style="color: var(--color-muted);">← {labelPrev}</div>
+          <div class="mt-1 font-medium truncate">{newer.date}</div>
+        </a>
+      ) : <div />}
+      {older ? (
+        <a
+          href={`/${older.lang}/${older.year}/${older.slug}`}
+          class="rounded-lg border p-3 text-right hover:bg-[color:var(--color-border)]"
+          style="border-color: var(--color-border);"
+        >
+          <div class="text-xs" style="color: var(--color-muted);">{labelNext} →</div>
+          <div class="mt-1 font-medium truncate">{older.date}</div>
+        </a>
+      ) : <div />}
+    </nav>
+
+    <p class="mt-6 text-xs text-center" style="color: var(--color-muted);">
+      <a href={meta.htmlUrl} rel="noopener noreferrer" target="_blank" class="underline">
+        {labelSource}
+      </a>
+    </p>
+  </main>
+
+  <script is:inline>
+    (function () {
+      var main = document.getElementById('report-main');
+      if (!main) return;
+      var newer = main.dataset.newer;
+      var older = main.dataset.older;
+      var sx = 0, sy = 0, tracking = false;
+      document.addEventListener('touchstart', function (e) {
+        if (e.touches.length !== 1) return;
+        sx = e.touches[0].clientX;
+        sy = e.touches[0].clientY;
+        tracking = true;
+      }, { passive: true });
+      document.addEventListener('touchend', function (e) {
+        if (!tracking) return;
+        tracking = false;
+        var t = e.changedTouches[0];
+        var dx = t.clientX - sx;
+        var dy = t.clientY - sy;
+        if (Math.abs(dx) < 80 || Math.abs(dy) > 60) return;
+        // Swipe right => newer (previous in time), left => older
+        if (dx > 0 && newer) location.href = newer;
+        else if (dx < 0 && older) location.href = older;
+      }, { passive: true });
+    })();
+  </script>
+</BaseLayout>

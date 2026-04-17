@@ -1,0 +1,49 @@
+---
+interface Props {
+  lang: 'en' | 'zh';
+  currentPath?: string;
+}
+
+const { lang, currentPath = '' } = Astro.props;
+const otherLang = lang === 'en' ? 'zh' : 'en';
+const otherLabel = lang === 'en' ? '中文' : 'EN';
+
+// If we're viewing a specific date, try to preserve it when switching lang.
+const dateMatch = currentPath.match(/\/(en|zh)\/(\d{4})\/(\d{4}-\d{2}-\d{2})/);
+const otherLangUrl = dateMatch
+  ? `/${otherLang}/${dateMatch[2]}/${dateMatch[3]}`
+  : `/${otherLang}`;
+---
+
+<header
+  class="sticky top-0 z-20 backdrop-blur-md border-b"
+  style="background: color-mix(in srgb, var(--color-bg) 85%, transparent); border-color: var(--color-border);"
+>
+  <div class="mx-auto max-w-2xl px-4 h-14 flex items-center justify-between">
+    <a href={`/${lang}`} class="flex items-center gap-2 font-semibold">
+      <span
+        class="inline-block w-2 h-2 rounded-full animate-pulse"
+        style="background: var(--color-accent);"
+      ></span>
+      <span>BuilderPulse</span>
+    </a>
+    <nav class="flex items-center gap-1 text-sm">
+      <a
+        href={`/${lang}`}
+        class="px-3 py-1.5 rounded-lg hover:bg-[color:var(--color-border)]"
+        >{lang === 'en' ? 'Daily' : '每日'}</a
+      >
+      <a
+        href={`/${lang}/archive`}
+        class="px-3 py-1.5 rounded-lg hover:bg-[color:var(--color-border)]"
+        >{lang === 'en' ? 'Archive' : '归档'}</a
+      >
+      <a
+        href={otherLangUrl}
+        class="px-3 py-1.5 rounded-lg hover:bg-[color:var(--color-border)] font-medium"
+        style="color: var(--color-accent);"
+        aria-label="Switch language">{otherLabel}</a
+      >
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  lang?: 'en' | 'zh';
+}
+
+const {
+  title,
+  description = 'xBuilderPulse — a readable mobile-friendly reader for BuilderPulse Daily.',
+  lang = 'en',
+} = Astro.props;
+
+const htmlLang = lang === 'zh' ? 'zh-CN' : 'en';
+---
+
+<!doctype html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content={description} />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="BuilderPulse" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={lang === 'zh' ? 'BuilderPulse 每日 · RSS' : 'BuilderPulse Daily · RSS'}
+      href={`/${lang}/rss.xml`}
+    />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-[100dvh] antialiased flex flex-col">
+    <div class="flex-1">
+      <slot />
+    </div>
+    <Footer lang={lang} />
+  </body>
+</html>

@@ -1,0 +1,32 @@
+---
+// Root entry redirects to the language auto-detected in the browser (default en).
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BuilderPulse Reader</title>
+    <script is:inline>
+      (function () {
+        var lang = 'en';
+        try {
+          var stored = localStorage.getItem('bp-lang');
+          if (stored === 'en' || stored === 'zh') {
+            lang = stored;
+          } else if (navigator.language && /^zh/i.test(navigator.language)) {
+            lang = 'zh';
+          }
+        } catch (_) {}
+        location.replace('/' + lang);
+      })();
+    </script>
+    <meta http-equiv="refresh" content="0; url=/en" />
+  </head>
+  <body>
+    <p>
+      <a href="/en">English</a> / <a href="/zh">中文</a>
+    </p>
+  </body>
+</html>
