@@ -129,7 +129,7 @@ function extractTitleAndSummary(
   }
   if (!title) title = meta.date;
 
-  // Extract the first blockquote as summary (Today's top 3, 今日要点 etc.)
+  // Try blockquote first (EN layout: "> Today's top 3: ...").
   const blockquote: string[] = [];
   let inQuote = false;
   for (const line of lines) {
@@ -142,7 +142,44 @@ function extractTitleAndSummary(
       break;
     }
   }
-  const summary = blockquote.join('\n').trim();
+  let summary = blockquote.join('\n').trim();
+
+  // Fallback (ZH layout: no blockquote, first substantive paragraph after H1).
+  if (!summary) {
+    const paragraphs: string[] = [];
+    let buf: string[] = [];
+    let pastH1 = false;
+    const flush = () => {
+      const p = buf.join(' ').trim();
+      buf = [];
+      if (p) paragraphs.push(p);
+    };
+    for (const line of lines) {
+      if (/^#\s/.test(line)) {
+        pastH1 = true;
+        flush();
+        continue;
+      }
+      if (!pastH1) continue;
+      // Skip H2/H3 headings, horizontal rules, blank lines as separators.
+      if (/^#{2,}\s/.test(line) || /^---+$/.test(line) || /^\s*$/.test(line)) {
+        flush();
+        continue;
+      }
+      buf.push(line.trim());
+    }
+    flush();
+    // Join first 1-2 paragraphs up to ~400 chars.
+    const out: string[] = [];
+    let total = 0;
+    for (const p of paragraphs) {
+      if (p.length < 20) continue;
+      out.push(p);
+      total += p.length;
+      if (total > 400) break;
+    }
+    summary = out.join('\n\n').trim();
+  }
 
   return { title, summary };
 }

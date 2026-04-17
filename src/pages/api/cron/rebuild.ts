@@ -65,23 +65,17 @@ export const GET: APIRoute = async ({ request }) => {
         if (!report || !meta) {
           return {
             title:
-              sub.lang === 'zh' ? 'BuilderPulse 每日' : 'BuilderPulse Daily',
+              sub.lang === 'zh' ? 'BuilderPulse · 新日报' : 'BuilderPulse · New report',
             body:
-              sub.lang === 'zh' ? '今日报告已更新' : 'A new report is out',
+              sub.lang === 'zh'
+                ? '今日报告已上新，点击查看'
+                : 'Today\u2019s report is live — tap to read.',
             url: `/${sub.lang}`,
           };
         }
-        const titlePrefix =
-          sub.lang === 'zh' ? 'BuilderPulse ' : 'BuilderPulse · ';
-        const body = report.summary
-          .replace(/\*\*([^*]+)\*\*/g, '$1')
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 160);
         return {
-          title: `${titlePrefix}${meta.date}`,
-          body,
+          title: `BuilderPulse \u00b7 ${formatDate(sub.lang, meta.date)}`,
+          body: buildPushBody(report.summary, 180),
           url: `/${meta.lang}/${meta.year}/${meta.slug}`,
           tag: `bp-${meta.lang}-${meta.date}`,
         };
@@ -107,4 +101,56 @@ function json(data: unknown, status = 200) {
     status,
     headers: { 'content-type': 'application/json' },
   });
+}
+
+function formatDate(lang: 'en' | 'zh', iso: string): string {
+  const d = new Date(iso + 'T00:00:00Z');
+  if (lang === 'zh') {
+    return `${d.getUTCMonth() + 1} 月 ${d.getUTCDate()} 日`;
+  }
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/** Clean markdown → plain text, extract lead item, truncate at sentence boundary. */
+function buildPushBody(summary: string, maxLen: number): string {
+  const plain = summary
+    // Strip leading "**Today's top 3:**" / "**今日要点：**" style labels.
+    .replace(/^\*\*[^*\n]+\*\*\s*:?\s*/m, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^>\s?/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // If the summary starts with a numbered list, keep only item 1 — it's the lead.
+  const lead = (() => {
+    const numbered = plain.match(/^\s*1\.\s*(.+?)(?=\s+\d+\.\s|$)/s);
+    if (numbered && numbered[1]) return numbered[1].trim();
+    return plain;
+  })();
+
+  return truncateAtSentence(lead, maxLen);
+}
+
+function truncateAtSentence(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  // Scan for the last sentence terminator (en + zh) followed by space or end.
+  const re = /[.!?。！？]["'\u201D\u2019\])]?(?=\s|$)/g;
+  let lastIdx = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(slice)) !== null) {
+    lastIdx = m.index + m[0].length;
+  }
+  if (lastIdx > max * 0.5) return slice.slice(0, lastIdx).trim();
+  // Fall back to a word boundary (en) — safe because zh has no spaces to break on.
+  const lastSpace = slice.lastIndexOf(' ');
+  if (lastSpace > max * 0.5) return slice.slice(0, lastSpace).trim() + '…';
+  return slice.trim() + '…';
 }
