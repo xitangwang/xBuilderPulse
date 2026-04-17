@@ -1,0 +1,17 @@
+name: Poll BuilderPulse upstream
+
+on:
+  schedule:
+    # Every hour at minute 7 (avoid minute 0 contention with other workflows).
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call rebuild endpoint
+        run: |
+          curl -sS -f \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://xbuilderpulse.vercel.app/api/cron/rebuild
