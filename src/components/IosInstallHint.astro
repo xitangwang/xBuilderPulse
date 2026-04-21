@@ -1,0 +1,112 @@
+---
+interface Props {
+  lang: 'en' | 'zh';
+}
+const { lang } = Astro.props;
+
+const T = {
+  en: {
+    title: 'Install BuilderPulse',
+    body: 'Add to your Home Screen to receive daily push notifications.',
+    step1: 'Tap',
+    step1Suffix: 'at the bottom',
+    step2: 'Choose',
+    step2Quoted: '"Add to Home Screen"',
+    dismiss: 'Not now',
+  },
+  zh: {
+    title: '安装 BuilderPulse',
+    body: '添加到主屏幕,才能接收每日推送',
+    step1: '点击底部的',
+    step1Suffix: '按钮',
+    step2: '选择',
+    step2Quoted: '「添加到主屏幕」',
+    dismiss: '暂不',
+  },
+}[lang];
+---
+
+<div
+  id="ios-install-hint"
+  hidden
+  class="fixed inset-x-3 bottom-3 z-50 rounded-2xl bg-stone-900 text-stone-100 shadow-2xl ring-1 ring-black/10 p-4 pr-3 text-sm leading-relaxed sm:max-w-sm sm:left-auto sm:right-3"
+>
+  <button
+    id="ios-install-hint-close"
+    type="button"
+    aria-label={T.dismiss}
+    class="absolute top-2 right-2 p-1.5 rounded-md text-stone-400 hover:text-stone-200 hover:bg-white/5"
+  >
+    <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
+    </svg>
+  </button>
+  <div class="font-semibold text-base pr-6">{T.title}</div>
+  <p class="mt-1 text-stone-300">{T.body}</p>
+  <ol class="mt-3 space-y-2 text-stone-200">
+    <li class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-orange-600 text-[11px] font-semibold">1</span>
+      <span>
+        {T.step1}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="inline-block h-[18px] w-[18px] -mt-0.5 mx-0.5 align-middle text-orange-400">
+          <path d="M12 3v12" stroke-linecap="round"/>
+          <path d="m7 8 5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" stroke-linecap="round"/>
+        </svg>
+        {T.step1Suffix}
+      </span>
+    </li>
+    <li class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-orange-600 text-[11px] font-semibold">2</span>
+      <span>{T.step2} <b class="text-white">{T.step2Quoted}</b></span>
+    </li>
+  </ol>
+  <!-- Arrow pointing down toward Safari's bottom share button. -->
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    class="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 h-6 w-6 text-stone-900 animate-bounce"
+    style="filter: drop-shadow(0 2px 2px rgba(0,0,0,.15))"
+  >
+    <path d="M12 4v14" stroke-linecap="round"/>
+    <path d="m6 13 6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<script is:inline>
+  (() => {
+    const KEY = 'bp-ios-hint-dismissed';
+    const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const standalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    // In-app browsers (WeChat/QQ) can't add to home screen.
+    const inAppBrowser = /MicroMessenger|QQ\//i.test(ua);
+
+    if (!isIOS || standalone || inAppBrowser) return;
+
+    try {
+      const ts = Number(localStorage.getItem(KEY) || 0);
+      if (ts && Date.now() - ts < COOLDOWN_MS) return;
+    } catch (_) { /* ignore */ }
+
+    const el = document.getElementById('ios-install-hint');
+    const closeBtn = document.getElementById('ios-install-hint-close');
+    if (!el || !closeBtn) return;
+
+    // Small delay so it doesn't flash before first paint.
+    setTimeout(() => {
+      el.hidden = false;
+    }, 600);
+
+    closeBtn.addEventListener('click', () => {
+      el.hidden = true;
+      try { localStorage.setItem(KEY, String(Date.now())); } catch (_) { /* ignore */ }
+    });
+  })();
+</script>

@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Footer from '../components/Footer.astro';
+import IosInstallHint from '../components/IosInstallHint.astro';
 
 interface Props {
   title: string;
@@ -47,6 +48,7 @@ const htmlLang = lang === 'zh' ? 'zh-CN' : 'en';
       <slot />
     </div>
     <Footer lang={lang} />
+    <IosInstallHint lang={lang} />
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
