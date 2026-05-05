@@ -46,7 +46,8 @@ src/
 
 public/
 ├── sw.js               # Service Worker(push + notificationclick)
-├── manifest.webmanifest
+├── manifest.json       # PWA manifest
+├── manifest.webmanifest # PWA manifest fallback
 └── icons/
 
 .github/workflows/

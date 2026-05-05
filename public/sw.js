@@ -34,6 +34,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/_astro/') ||
     url.pathname === '/favicon.svg' ||
+    url.pathname === '/manifest.json' ||
     url.pathname === '/manifest.webmanifest' ||
     /\.(?:css|js|woff2?|ttf|png|jpg|jpeg|svg|webp|ico)$/.test(url.pathname)
   ) {
